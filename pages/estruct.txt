@@ -1,0 +1,23 @@
+siscductt/
+├── package.json
+├── pages/
+│   ├── index.js
+│   ├── verify.js
+│   ├── import.js
+│   ├── reports.js
+│   ├── api/
+│   │   ├── check_ticket.js
+│   │   ├── insert_ticket.js
+│   │   ├── import_tickets.js
+│   │   ├── get_reports.js
+│   │   ├── get_dashboard_data.js
+│   │   └── db.js
+└── styles/
+    └── Dashboard.module.css
+
+npm install
+npm run dev
+Abrir en el Navegador: Abre tu navegador y ve a http://localhost:3000.
+
+npm install mysql2
+npm install formidable papaparse

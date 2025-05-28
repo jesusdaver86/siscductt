@@ -1,0 +1,14 @@
+/* styles/Import.module.css */
+.container {
+  padding: 20px;
+  text-align: center;
+}
+
+.modal-header {
+  background-color: #28a745;
+  color: white;
+}
+
+.progress {
+  margin-top: 10px;
+}
