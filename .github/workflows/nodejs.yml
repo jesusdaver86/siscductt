@@ -16,6 +16,8 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v2
       with:
-        node-version: '14' # Cambia a la versión que necesites
+        node-version: '22.16' # Cambia a la versión que necesites
     - run: npm install
+    - run: npm install mysql2
+    - run: npm install formidable papaparse
     - run: npm test # Si tienes pruebas, de lo contrario, puedes omitir esta línea
