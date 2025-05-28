@@ -1,86 +1,71 @@
-🔧 Mejoras clave implementadas:
+name: Unzip and Commit Files (Including Split ZIPs)
 
-    Detección robusta de archivos ZIP:
+on:
+  push:
+    paths:
+      - '*.zip'
+      - '*.z*' # Captura archivos .z01, .z02, etc.
 
-        Busca recursivamente en todos los subdirectorios (**/*.zip)
+jobs:
+  unzip-and-commit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-        Maneja correctamente paths con espacios
+      - name: Prepare environment
+        id: prep
+        run: |
+          # Encuentra el archivo ZIP principal (el que no es .zXX)
+          MAIN_ZIP=$(ls *.zip 2>/dev/null | grep -v '.z[0-9][0-9]$' | head -n 1)
+          
+          if [ -z "$MAIN_ZIP" ]; then
+            echo "No se encontró archivo ZIP principal"
+            echo "has_zips=false" >> $GITHUB_ENV
+          else
+            echo "Archivo ZIP principal: $MAIN_ZIP"
+            echo "main_zip=$MAIN_ZIP" >> $GITHUB_ENV
+            echo "has_zips=true" >> $GITHUB_ENV
+          fi
 
-    Manejo de errores mejorado:
+      - name: Process ZIP files
+        if: env.has_zips == 'true'
+        run: |
+          MAIN_ZIP="${{ env.main_zip }}"
+          BASE_NAME="${MAIN_ZIP%.*}"
+          
+          # Verifica si hay archivos divididos
+          if ls ${BASE_NAME}.z?? 2>/dev/null; then
+            echo "Detectados archivos ZIP divididos - combinando..."
+            zip -s 0 "$MAIN_ZIP" --out "combined_$MAIN_ZIP"
+            unzip "combined_$MAIN_ZIP" -d .
+            rm -f "combined_$MAIN_ZIP" ${BASE_NAME}.z??
+          else
+            echo "Procesando ZIP normal..."
+            unzip "$MAIN_ZIP" -d .
+          fi
+          
+          # Limpieza final
+          rm -f "$MAIN_ZIP"
 
-        Verifica si hay archivos ZIP antes de procesar
-
-        Solo hace commit si hubo cambios reales
-
-        Sistema de salidas (outputs) para control de flujo
-
-    Sistema de recuperación:
-
-        Si el push falla, crea automáticamente un Pull Request
-
-        Usa rebase para evitar conflictos de merge
-
-    Seguridad reforzada:
-
-        Usa el GITHUB_TOKEN integrado
-
-        Configuración explícita de permisos
-
-        Procesamiento seguro de paths
-
-    Información detallada:
-
-        Muestra qué archivos se están procesando
-
-        Outputs claros en cada paso
-
-        Mensajes de commit estandarizados
-
-📌 Instrucciones de uso:
-
-    Copia este workflow a .github/workflows/unzip_files.yml
-
-    Haz push de un archivo ZIP a tu repositorio
-
-    El Action:
-
-        Descomprimirá el ZIP
-
-        Eliminará el archivo original
-
-        Commiteará los nuevos archivos
-
-        Pusheará los cambios a la misma rama
-
-Si hay problemas con el push directo, automáticamente creará un Pull Request con los cambios.
-
-
-🔍 Mejoras clave:
-
-    Compatibilidad con ZIP divididos:
-
-        Detecta automáticamente archivos .z01, .z02, etc.
-
-        Usa zip -s 0 para combinar las partes antes de extraer
-
-    Manejo más robusto:
-
-        Paso de preparación para identificar archivos ZIP
-
-        Lógica condicional para ZIP normales vs divididos
-
-        Mejor limpieza de archivos temporales
-
-    Optimización del flujo:
-
-        Solo ejecuta pasos de extracción si hay ZIPs válidos
-
-        Solo hace commit si hay cambios reales
-
-        Mantiene tu estructura de mensajes y configuración familiar
-
-    Mensajes más informativos:
-
-        Indica claramente cuando detecta archivos divididos
-
-        Muestra qué archivo principal está procesando
+      - name: Commit and push changes
+        if: env.has_zips == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git checkout ${{ github.ref_name }}
+          
+          git add .
+          if ! git diff-index --quiet HEAD --; then
+            git commit -m "Auto-commit: Archivos descomprimidos [skip ci]"
+            git push origin ${{ github.ref_name }}
+          else
+            echo "No hay cambios para commitear"
+          fi
