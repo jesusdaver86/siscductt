@@ -8,7 +8,6 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -17,6 +16,5 @@ jobs:
       uses: actions/setup-node@v2
       with:
         node-version: '22.16'
-    - run: npm install
-    - run: npm install mysql2
-    - run: npm install formidable papaparse
+    - run: npm install # Instala todas las dependencias según package.json
+    - run: npm install mysql2 formidable papaparse # Si necesitas instalar paquetes adicionales
